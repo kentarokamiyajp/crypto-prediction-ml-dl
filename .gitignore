@@ -1,0 +1,3 @@
+notebook/*/.ipynb_checkpoints
+script/*/__pycache__
+script/common/.env
