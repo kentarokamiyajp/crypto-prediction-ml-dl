@@ -23,6 +23,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
+import keras.backend as K
 
 # Generic.
 def get_single_col_by_input_type(input_type, column_definition):
@@ -102,6 +103,151 @@ def numpy_normalised_quantile_loss(y, y_pred, quantile):
     normaliser = y.abs().mean()
 
     return 2 * quantile_loss / normaliser
+
+
+def wmae_loss(y_true, y_pred):
+    
+    print('y_true:',y_true.shape)
+    print('y_pred:',y_pred.shape)
+    
+    def step_function(data):
+        return tf.where(data >= 0., 1., 0.)
+    
+    def calculate_gain(data):
+        print('data:', data.shape)
+        # Set the first gain value is 1 since there is no past data for the first data.
+        gain_data = tf.concat(
+            [
+                tf.constant([[1.,]], dtype=tf.float32), 
+                tf.subtract(
+                    tf.divide(
+                        data[1:], 
+                        data[:-1]
+                    ), 
+                    tf.constant(1., dtype=tf.float32))
+            ],
+            0 # tensor rank to concat axis
+        )
+        return gain_data
+    
+    l = tf.constant(1.5, dtype=tf.float32)
+    print('l:',l.shape)
+    
+    diff = tf.subtract(y_true[:,:,1], y_pred[:,:,1])
+    print('diff:',diff.shape)
+    
+    w_true = step_function(y_true[:,:,1])
+    print('w_true:',w_true.shape)
+    w_pred = step_function(calculate_gain(y_pred[:,:,1]))
+    print('w_pred:',w_pred.shape)
+    
+    # Weighted mean absolute error
+    threshold = tf.multiply(w_true, diff)
+    print('threshold:',threshold.shape)
+    print('step_function(threshold):', step_function(threshold).shape)
+    
+    wae = tf.multiply(
+                step_function(threshold),
+                (tf.multiply(
+                    tf.add(
+                        l,
+                        tf.math.abs(tf.subtract(w_true,w_pred))
+                    ),
+                    tf.math.abs(diff)
+                    )
+                )
+            )  \
+        + tf.multiply(
+                tf.subtract(
+                    tf.constant(1., dtype=tf.float32),
+                    step_function(threshold)),
+                tf.multiply(
+                    tf.divide(
+                        tf.constant(1., dtype=tf.float32),
+                        l),
+                    tf.math.abs(diff)
+                    )
+        )
+    
+    print('wae:', wae.shape)
+    
+    wmae = tf.reduce_mean(tf.math.reduce_sum(wae))
+    
+    return wmae
+
+def wmse_loss(y_true, y_pred):
+    
+    def step_function(data):
+        return tf.where(data >= 0., 1., 0.)
+    
+    def calculate_gain(data):
+        # Set the first gain value is 1 since there is no past data for the first data.
+        gain_data = tf.concat([tf.constant([[1.,]], dtype=tf.float32), tf.subtract(tf.divide(data[1:], data[:-1]), tf.constant(1., dtype=tf.float32))], 1)
+        return gain_data
+    
+    l = 1.5
+
+    # -1.0 <= absolute_diff <= 1.0
+    absolute_diff = y_true[:,0] - y_pred[:,0]
+    
+    # 1.0 <= squared_diff
+    squared_diff = step_function(absolute_diff) * (absolute_diff+2)**2 \
+            + (1 - step_function(absolute_diff)) * (absolute_diff-2)**2
+    
+    w_true = step_function(y_true[:, 1])
+    w_pred = step_function(calculate_gain(y_pred[:, 1]))
+    
+    # Weighted mean squared error
+    threshold = w_true * absolute_diff
+    wse = step_function(threshold) * ((l + abs(w_true - w_pred)) * abs(squared_diff)) \
+            + (1 - step_function(threshold)) * ((1/l) * abs(squared_diff))
+    wmse = sum(wse) / wse.shape[0]
+    
+    return wmse
+
+def f1_metric(y_true, y_pred):
+    
+    print('y_true(f1_metric):',y_true.shape)
+    print('y_pred(f1_metric):',y_pred.shape)
+
+    def step_function(data):
+        return tf.where(data >= 0., 1., 0.)
+    
+    def calculate_gain(data):
+        print('data:', data.shape)
+        # Set the first gain value is 1 since there is no past data for the first data.
+        gain_data = tf.concat(
+            [
+                tf.constant([[1.,]], dtype=tf.float32), 
+                tf.subtract(
+                    tf.divide(
+                        data[1:], 
+                        data[:-1]
+                    ), 
+                    tf.constant(1., dtype=tf.float32))
+            ],
+            0 # tensor rank to concat axis
+        )
+        return gain_data
+        
+    w_true = step_function(y_true[:,:,1])
+    print('w_true(f1_metric):',w_true.shape)
+    w_pred = step_function(calculate_gain(y_pred[:,:,1]))
+    print('w_pred(f1_metric):',w_pred.shape)
+
+    ground_positives = K.cast(K.sum(w_true, axis=0), "float") + K.epsilon()         # = TP + FN
+    pred_positives = K.cast(K.sum(w_pred, axis=0), "float") + K.epsilon()         # = TP + FP
+    true_positives = K.cast(K.sum(w_true * w_pred, axis=0), "float") + K.epsilon()  # = TP
+    
+    precision = true_positives / pred_positives 
+    recall = true_positives / ground_positives
+        #both = 1 if ground_positives == 0 or pred_positives == 0
+        #shape (4,)
+
+    f1 = 2 * (precision * recall) / (precision + recall + K.epsilon())
+        #still with shape (4,)
+
+    return f1
 
 
 # OS related functions.

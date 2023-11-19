@@ -175,7 +175,7 @@ class CryptoDayFormatter(GenericDataFormatter):
         """Returns fixed model parameters for experiments."""
 
         fixed_params = {
-            "total_time_steps": 30 + 7,
+            "total_time_steps": 30 + 1, # predict 1 next day.
             "num_encoder_steps": 30,
             "num_epochs": 100,
             "early_stopping_patience": 5,

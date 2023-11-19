@@ -912,45 +912,10 @@ class TemporalFusionTransformer(object):
             model = tf.keras.Model(inputs=all_inputs, outputs=outputs)
 
             print(model.summary())
+            
+            wmae_loss = utils.wmae_loss
 
-            valid_quantiles = self.quantiles
-            output_size = self.output_size
-
-            class QuantileLossCalculator(object):
-                """Computes the combined quantile loss for prespecified quantiles.
-
-                Attributes:
-                  quantiles: Quantiles to compute losses
-                """
-
-                def __init__(self, quantiles):
-                    """Initializes computer with quantiles for loss calculations.
-
-                    Args:
-                      quantiles: Quantiles to use for computations.
-                    """
-                    self.quantiles = quantiles
-
-                def quantile_loss(self, a, b):
-                    """Returns quantile loss for specified quantiles.
-
-                    Args:
-                      a: Targets
-                      b: Predictions
-                    """
-                    quantiles_used = set(self.quantiles)
-
-                    loss = 0.0
-                    for i, quantile in enumerate(valid_quantiles):
-                        if quantile in quantiles_used:
-                            loss += utils.tensorflow_quantile_loss(
-                                a[Ellipsis, output_size * i : output_size * (i + 1)], b[Ellipsis, output_size * i : output_size * (i + 1)], quantile
-                            )
-                    return loss
-
-            quantile_loss = QuantileLossCalculator(valid_quantiles).quantile_loss
-
-            model.compile(loss=quantile_loss, optimizer=adam, sample_weight_mode="temporal")
+            model.compile(loss=wmae_loss, metrics=["mae", "mse", utils.f1_metric], optimizer=adam, sample_weight_mode="temporal")
 
             self._input_placeholder = all_inputs
 
@@ -1016,7 +981,6 @@ class TemporalFusionTransformer(object):
         tmp_checkpont = self.get_keras_saved_path(self._temp_folder)
         if os.path.exists(tmp_checkpont):
             self.load(self._temp_folder, use_keras_loadings=True)
-
         else:
             print("Cannot load from {}, skipping ...".format(self._temp_folder))
 
@@ -1024,11 +988,11 @@ class TemporalFusionTransformer(object):
         """Applies evaluation metric to the training data.
 
         Args:
-            data: Dataframe for evaluation
-            eval_metric: Evaluation metic to return, based on model definition.
+          data: Dataframe for evaluation
+          eval_metric: Evaluation metic to return, based on model definition.
 
         Returns:
-            Computed evaluation loss.
+          Computed evaluation loss.
         """
 
         if data is None:
@@ -1046,7 +1010,7 @@ class TemporalFusionTransformer(object):
         )
 
         metrics = pd.Series(metric_values, self.model.metrics_names)
-
+        
         return metrics[eval_metric]
 
     def predict(self, df, return_targets=False):
@@ -1095,6 +1059,33 @@ class TemporalFusionTransformer(object):
             process_map["targets"] = outputs
 
         return {k: format_outputs(process_map[k]) for k in process_map}
+    
+    def predict_with_custom_loss(self, df, return_targets=False):
+        """Computes predictions for a given input dataset.
+
+        Args:
+          df: Input dataframe
+          return_targets: Whether to also return outputs aligned with predictions to
+            faciliate evaluation
+
+        Returns:
+          Input dataframe or tuple of (input dataframe, algined output dataframe).
+        """
+
+        data = self._batch_data(df)
+        
+
+        inputs = data["inputs"]
+        outputs = data["outputs"]
+
+        process_map = {}
+        process_map["results"] = self.model.predict(inputs, workers=16, use_multiprocessing=True, batch_size=self.minibatch_size)
+        
+        if return_targets:
+            # Add targets if relevant
+            process_map["targets"] = outputs
+        
+        return process_map
 
     def get_attention(self, df):
         """Computes TFT attention weights for a given dataset.
