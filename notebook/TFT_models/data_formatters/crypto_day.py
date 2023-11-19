@@ -178,8 +178,8 @@ class CryptoDayFormatter(GenericDataFormatter):
             "total_time_steps": 30 + 1, # predict 1 next day.
             "num_encoder_steps": 30,
             "num_epochs": 100,
-            "early_stopping_patience": 5,
-            "multiprocessing_workers": 5,
+            "early_stopping_patience": 10,
+            "multiprocessing_workers": 10,
         }
 
         return fixed_params
