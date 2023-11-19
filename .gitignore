@@ -2,6 +2,7 @@ notebook/*/*/*/.ipynb_checkpoints
 notebook/*/*/.ipynb_checkpoints
 notebook/*/.ipynb_checkpoints
 notebook/*/*/__pycache__
+notebook/TFT_models/*/saved_models
 notebook/TFT_models/saved_models
 script/*/__pycache__
 script/common/.env
