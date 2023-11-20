@@ -27,6 +27,7 @@ import data_formatters.favorita
 import data_formatters.traffic
 import data_formatters.volatility
 import data_formatters.crypto_day
+import data_formatters.crypto_day_all
 
 
 class ExperimentConfig(object):
@@ -43,7 +44,7 @@ class ExperimentConfig(object):
         experiment.
     """
 
-    default_experiments = ["volatility", "electricity", "traffic", "favorita", "crypto_day"]
+    default_experiments = ["volatility", "electricity", "traffic", "favorita", "crypto_day", "crypto_day_all"]
 
     def __init__(self, experiment="volatility", root_folder=None):
         """Creates configs based on default experiment chosen.
@@ -80,6 +81,7 @@ class ExperimentConfig(object):
             "traffic": "hourly_data.csv",
             "favorita": "favorita_consolidated.csv",
             "crypto_day": "crypto_day.csv",
+            "crypto_day_all": "crypto_day_all.csv",
         }
 
         return os.path.join(self.data_folder, csv_map[self.experiment])
@@ -88,7 +90,7 @@ class ExperimentConfig(object):
     def hyperparam_iterations(self):
         custom_iterations = 100
 
-        if self.experiment == "crypto_day":
+        if self.experiment in ["crypto_day","crypto_day_all"]:
             return custom_iterations
         else:
             return 240 if self.experiment == "volatility" else 60
@@ -106,6 +108,7 @@ class ExperimentConfig(object):
             "traffic": data_formatters.traffic.TrafficFormatter,
             "favorita": data_formatters.favorita.FavoritaFormatter,
             "crypto_day": data_formatters.crypto_day.CryptoDayFormatter,
+            "crypto_day_all": data_formatters.crypto_day_all.CryptoDayAllFormatter,
         }
 
         return data_formatter_class[self.experiment]()
