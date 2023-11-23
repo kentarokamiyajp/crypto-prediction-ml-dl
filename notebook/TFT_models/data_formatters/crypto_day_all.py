@@ -212,11 +212,11 @@ class CryptoDayAllFormatter(GenericDataFormatter):
         """Returns default optimised model parameters."""
 
         model_params = {
-            "dropout_rate": 0.5,
-            "hidden_layer_size": 10,
-            "learning_rate": 0.01,
+            "dropout_rate": 0.3,
+            "hidden_layer_size": 20,
+            "learning_rate": 0.001,
             "minibatch_size": 64,
-            "max_gradient_norm": 100.0,
+            "max_gradient_norm": 1.0,
             "num_heads": 1,
             "stack_size": 1,
         }
