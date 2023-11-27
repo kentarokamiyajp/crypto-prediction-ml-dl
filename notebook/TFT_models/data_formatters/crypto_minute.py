@@ -185,11 +185,11 @@ class CryptoMinuteFormatter(GenericDataFormatter):
         """Returns fixed model parameters for experiments."""
 
         fixed_params = {
-            "total_time_steps": 60 + 10, # predict N next minute.
-            "num_encoder_steps": 60,
+            "total_time_steps": 30 + 1, # predict N next data point.
+            "num_encoder_steps": 30,
             "num_epochs": 100,
-            "early_stopping_patience": 5,
-            "multiprocessing_workers": 5,
+            "early_stopping_patience": 10,
+            "multiprocessing_workers": 10,
         }
 
         return fixed_params
