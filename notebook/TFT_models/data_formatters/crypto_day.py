@@ -178,8 +178,8 @@ class CryptoDayFormatter(GenericDataFormatter):
             "total_time_steps": 30 + 1, # predict 1 next day.
             "num_encoder_steps": 30,
             "num_epochs": 100,
-            "early_stopping_patience": 10,
-            "multiprocessing_workers": 10,
+            "early_stopping_patience": 5,
+            "multiprocessing_workers": 5,
         }
 
         return fixed_params
@@ -188,13 +188,12 @@ class CryptoDayFormatter(GenericDataFormatter):
         """Returns default optimised model parameters."""
 
         model_params = {
-            "dropout_rate": 0.3,
-            "hidden_layer_size": 160,
+            "dropout_rate": 0.5,
+            "hidden_layer_size": 10,
             "learning_rate": 0.01,
-            "minibatch_size": 32,
-            "max_gradient_norm": 0.01,
+            "minibatch_size": 64,
+            "max_gradient_norm": 100.0,
             "num_heads": 1,
             "stack_size": 1,
         }
-
         return model_params

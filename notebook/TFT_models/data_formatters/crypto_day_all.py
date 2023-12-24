@@ -28,7 +28,7 @@ DataTypes = data_formatters.base.DataTypes
 InputTypes = data_formatters.base.InputTypes
 
 
-class CryptoDayFormatter(GenericDataFormatter):
+class CryptoDayAllFormatter(GenericDataFormatter):
     """Defines and formats data for the crypto_day dataset.
 
     Attributes:
@@ -199,11 +199,11 @@ class CryptoDayFormatter(GenericDataFormatter):
         """Returns fixed model parameters for experiments."""
 
         fixed_params = {
-            "total_time_steps": 30 + 7,
+            "total_time_steps": 30 + 1, # predict 1 next day.
             "num_encoder_steps": 30,
             "num_epochs": 100,
-            "early_stopping_patience": 5,
-            "multiprocessing_workers": 5,
+            "early_stopping_patience": 10,
+            "multiprocessing_workers": 10,
         }
 
         return fixed_params
@@ -213,10 +213,10 @@ class CryptoDayFormatter(GenericDataFormatter):
 
         model_params = {
             "dropout_rate": 0.3,
-            "hidden_layer_size": 160,
-            "learning_rate": 0.01,
-            "minibatch_size": 32,
-            "max_gradient_norm": 0.01,
+            "hidden_layer_size": 20,
+            "learning_rate": 0.001,
+            "minibatch_size": 64,
+            "max_gradient_norm": 1.0,
             "num_heads": 1,
             "stack_size": 1,
         }
