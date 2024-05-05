@@ -4,4 +4,6 @@ notebook/*/*/.ipynb_checkpoints
 notebook/*/.ipynb_checkpoints
 notebook/*/*/__pycache__
 script/*/__pycache__
+notebook/*/data
+notebook/*/models
 script/common/.env
